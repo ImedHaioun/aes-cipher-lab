@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AES Cipher Lab</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Sora:wght@300;400;600;700&display=swap');
+
+  :root {
+    --bg: #0a0e1a;
+    --bg2: #0f1525;
+    --bg3: #141c30;
+    --card: #161f35;
+    --card2: #1c2842;
+    --border: #2a3856;
+    --border2: #3a4f72;
+    --accent: #4f8ef7;
+    --accent2: #7eb8f7;
+    --accent3: #3a6fd8;
+    --green: #3dd68c;
+    --green2: #2ab878;
+    --red: #f05a5a;
+    --amber: #f5a623;
+    --text: #e8edf8;
+    --text2: #8fa4c8;
+    --text3: #5a6f8c;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Sora', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(79,142,247,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,142,247,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    padding: 3rem 0 2.5rem;
+  }
+
+  .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(79,142,247,0.12);
+    border: 1px solid rgba(79,142,247,0.3);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--accent2);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+
+  .logo-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  h1 {
+    font-family: var(--sans);
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #e8edf8 0%, #4f8ef7 50%, #3dd68c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    color: var(--text2);
+    font-size: 1rem;
+    font-weight: 300;
+    max-width: 500px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  /* Tab navigation */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    margin: 2rem auto;
+    max-width: 400px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text2);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tab.active {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 4px 16px rgba(79,142,247,0.4);
+  }
+
+  .tab:hover:not(.active) {
+    background: var(--card2);
+    color: var(--text);
+  }
+
+  /* Main grid */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: border-color 0.2s;
+  }
+
+  .card:hover { border-color: var(--border2); }
+
+  .card-full {
+    grid-column: 1 / -1;
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text3);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Form elements */
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text2);
+    margin-bottom: 6px;
+    font-family: var(--mono);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  textarea, input[type="text"], input[type="password"] {
+    width: 100%;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    resize: none;
+    line-height: 1.6;
+  }
+
+  textarea:focus, input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79,142,247,0.12);
+  }
+
+  textarea { height: 140px; }
+
+  /* Select group */
+  .select-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 1rem;
+  }
+
+  .radio-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .radio-btn {
+    flex: 1;
+    min-width: 60px;
+    text-align: center;
+    padding: 8px 12px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .radio-btn:hover {
+    border-color: var(--border2);
+    color: var(--text);
+  }
+
+  .radio-btn.selected {
+    background: rgba(79,142,247,0.15);
+    border-color: var(--accent);
+    color: var(--accent2);
+  }
+
+  /* Key strength indicator */
+  .key-wrapper { position: relative; }
+
+  .key-strength {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  .strength-bar {
+    height: 3px;
+    flex: 1;
+    border-radius: 2px;
+    background: var(--border);
+    transition: background 0.3s;
+  }
+
+  /* Info box */
+  .info-box {
+    background: rgba(79,142,247,0.06);
+    border: 1px solid rgba(79,142,247,0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--text2);
+    font-family: var(--mono);
+    line-height: 1.6;
+    margin-top: 8px;
+  }
+
+  .info-box span { color: var(--accent2); }
+
+  /* Buttons */
+  .btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--accent3), var(--accent));
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(79,142,247,0.4);
+  }
+
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-primary.processing {
+    background: linear-gradient(135deg, #2a3856, #3a4f72);
+    cursor: wait;
+  }
+
+  .btn-secondary {
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text2);
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--border2);
+    color: var(--text);
+    background: var(--card2);
+  }
+
+  /* Output area */
+  .output-area {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--green);
+    min-height: 100px;
+    word-break: break-all;
+    line-height: 1.8;
+    position: relative;
+    white-space: pre-wrap;
+  }
+
+  .output-placeholder {
+    color: var(--text3);
+    font-style: italic;
+  }
+
+  .output-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .output-label {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .output-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  /* Status toast */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 13px;
+    font-family: var(--sans);
+    color: var(--text);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: var(--green); }
+  .toast.error { border-color: var(--red); }
+
+  .toast-icon {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .toast.success .toast-icon { background: var(--green); color: #0a0e1a; }
+  .toast.error .toast-icon { background: var(--red); color: white; }
+
+  /* IV badge */
+  .iv-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(61,214,140,0.1);
+    border: 1px solid rgba(61,214,140,0.25);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--green);
+    margin-top: 6px;
+  }
+
+  /* Section divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 1.25rem 0;
+  }
+
+  /* File upload zone */
+  .file-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--bg2);
+  }
+
+  .file-zone:hover {
+    border-color: var(--accent);
+    background: rgba(79,142,247,0.05);
+  }
+
+  .file-zone-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+    opacity: 0.5;
+  }
+
+  .file-zone p {
+    font-size: 12px;
+    color: var(--text3);
+    font-family: var(--mono);
+  }
+
+  .file-zone .file-name {
+    font-size: 13px;
+    color: var(--accent2);
+    margin-top: 4px;
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1rem 1.5rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text3);
+  }
+
+  .stat-value {
+    font-size: 14px;
+    font-family: var(--mono);
+    font-weight: 500;
+    color: var(--accent2);
+  }
+
+  /* Tab panels */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Explanation section */
+  .explanation-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .explanation-grid { grid-template-columns: 1fr; }
+  }
+
+  .exp-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+
+  .exp-card h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent2);
+    font-family: var(--mono);
+    margin-bottom: 10px;
+    letter-spacing: 0.05em;
+  }
+
+  .exp-card p {
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.7;
+    font-family: var(--sans);
+    font-weight: 300;
+  }
+
+  .exp-card .tag {
+    display: inline-block;
+    background: rgba(79,142,247,0.1);
+    border: 1px solid rgba(79,142,247,0.2);
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--accent2);
+    margin-right: 4px;
+    margin-bottom: 4px;
+  }
+
+  .rounds-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .round-box {
+    text-align: center;
+    padding: 10px 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  .round-box.r128 { border-color: rgba(79,142,247,0.4); background: rgba(79,142,247,0.08); }
+  .round-box.r192 { border-color: rgba(61,214,140,0.4); background: rgba(61,214,140,0.08); }
+  .round-box.r256 { border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.08); }
+
+  .round-num {
+    font-size: 22px;
+    font-weight: 700;
+    font-family: var(--mono);
+  }
+
+  .r128 .round-num { color: var(--accent); }
+  .r192 .round-num { color: var(--green); }
+  .r256 .round-num { color: var(--amber); }
+
+  .round-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text3);
+    margin-top: 2px;
+  }
+
+  input[type="file"] { display: none; }
+
+  .form-group { margin-bottom: 1rem; }
+
+  /* Ripple effect on button */
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    transform: scale(0);
+    animation: ripple 0.6s linear;
+    pointer-events: none;
+  }
+
+  @keyframes ripple {
+    to { transform: scale(4); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="logo-badge">
+      <div class="logo-dot"></div>
+      AES Cipher Lab v1.0
+    </div>
+    <h1>AES Encryption &<br>Decryption System</h1>
+    <p class="subtitle">Encrypt and decrypt messages using AES-128, AES-192, or AES-256 with ECB, CBC, and CFB modes.</p>
+  </header>
+
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="stat">
+      <span class="stat-label">Mode</span>
+      <span class="stat-value" id="stat-mode">CBC</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Key Length</span>
+      <span class="stat-value" id="stat-keylen">256-bit</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Block Size</span>
+      <span class="stat-value">128-bit</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">IV Required</span>
+      <span class="stat-value" id="stat-iv">Yes</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Operation</span>
+      <span class="stat-value" id="stat-op">Encrypt</span>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('encrypt')">🔐 Encrypt</button>
+    <button class="tab" onclick="switchTab('decrypt')">🔓 Decrypt</button>
+    <button class="tab" onclick="switchTab('about')">📖 About AES</button>
+  </div>
+
+  <!-- ENCRYPT PANEL -->
+  <div class="panel active" id="panel-encrypt">
+    <div class="grid">
+      <!-- Config card -->
+      <div class="card">
+        <div class="card-title">Configuration</div>
+
+        <div class="select-group">
+          <label>AES Mode</label>
+          <div class="radio-group" id="mode-group">
+            <div class="radio-btn" data-val="ECB" onclick="selectMode('ECB', this)">ECB</div>
+            <div class="radio-btn selected" data-val="CBC" onclick="selectMode('CBC', this)">CBC</div>
+            <div class="radio-btn" data-val="CFB" onclick="selectMode('CFB', this)">CFB</div>
+          </div>
+          <div class="info-box" id="mode-info">
+            <span>CBC</span> — Cipher Block Chaining. Each block XOR'd with previous ciphertext. Requires IV. Most recommended.
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="select-group">
+          <label>Key Length</label>
+          <div class="radio-group" id="keylen-group">
+            <div class="radio-btn" data-val="128" onclick="selectKeyLen('128', this)">128-bit</div>
+            <div class="radio-btn" data-val="192" onclick="selectKeyLen('192', this)">192-bit</div>
+            <div class="radio-btn selected" data-val="256" onclick="selectKeyLen('256', this)">256-bit</div>
+          </div>
+          <div class="info-box" id="keylen-info">
+            <span>AES-256</span> — 32-byte key, 14 rounds. Military-grade security. Key will be SHA-256 hashed to 32 bytes.
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="form-group">
+          <label>Secret Key</label>
+          <div class="key-wrapper">
+            <input type="password" id="enc-key" placeholder="Enter your secret key..." oninput="updateKeyStrength()">
+          </div>
+          <div class="key-strength">
+            <div class="strength-bar" id="sb1"></div>
+            <div class="strength-bar" id="sb2"></div>
+            <div class="strength-bar" id="sb3"></div>
+            <div class="strength-bar" id="sb4"></div>
+            <div class="strength-bar" id="sb5"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input card -->
+      <div class="card">
+        <div class="card-title">Plaintext Input</div>
+
+        <div class="form-group">
+          <label>Message to Encrypt</label>
+          <textarea id="enc-input" placeholder="Enter your message here...&#10;&#10;Example: Hello, World! This is a secret message."></textarea>
+        </div>
+
+        <div id="iv-display" style="margin-bottom: 1rem;">
+          <div class="iv-badge">
+            ◆ IV will be auto-generated and prepended to output
+          </div>
+        </div>
+
+        <button class="btn-primary" id="enc-btn" onclick="handleEncrypt(this)">
+          Encrypt Message
+        </button>
+      </div>
+
+      <!-- Output card -->
+      <div class="card card-full">
+        <div class="card-title">Encrypted Output</div>
+        <div class="output-toolbar">
+          <span class="output-label">Ciphertext (Base64)</span>
+          <div class="output-actions">
+            <button class="btn-secondary" onclick="copyOutput('enc')">Copy</button>
+            <button class="btn-secondary" onclick="saveTxtFile()">Save .txt</button>
+            <button class="btn-secondary" onclick="clearEnc()">Clear</button>
+          </div>
+        </div>
+        <div class="output-area" id="enc-output">
+          <span class="output-placeholder">Encrypted ciphertext will appear here...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DECRYPT PANEL -->
+  <div class="panel" id="panel-decrypt">
+    <div class="grid">
+      <!-- Config card (mirrored) -->
+      <div class="card">
+        <div class="card-title">Configuration</div>
+
+        <div class="select-group">
+          <label>AES Mode</label>
+          <div class="radio-group" id="dmode-group">
+            <div class="radio-btn" data-val="ECB" onclick="selectDMode('ECB', this)">ECB</div>
+            <div class="radio-btn selected" data-val="CBC" onclick="selectDMode('CBC', this)">CBC</div>
+            <div class="radio-btn" data-val="CFB" onclick="selectDMode('CFB', this)">CFB</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="select-group">
+          <label>Key Length</label>
+          <div class="radio-group" id="dkeylen-group">
+            <div class="radio-btn" data-val="128" onclick="selectDKeyLen('128', this)">128-bit</div>
+            <div class="radio-btn" data-val="192" onclick="selectDKeyLen('192', this)">192-bit</div>
+            <div class="radio-btn selected" data-val="256" onclick="selectDKeyLen('256', this)">256-bit</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="form-group">
+          <label>Secret Key</label>
+          <input type="password" id="dec-key" placeholder="Enter the same key used for encryption...">
+        </div>
+
+        <div style="margin-top: 1rem;">
+          <label>Load from .txt File</label>
+          <div class="file-zone" onclick="document.getElementById('file-input').click()" id="file-zone">
+            <div class="file-zone-icon">📁</div>
+            <p>Click to load ciphertext from .txt file</p>
+            <p class="file-name" id="file-name-display"></p>
+          </div>
+          <input type="file" id="file-input" accept=".txt" onchange="loadFile(event)">
+        </div>
+      </div>
+
+      <!-- Input card -->
+      <div class="card">
+        <div class="card-title">Ciphertext Input</div>
+
+        <div class="form-group">
+          <label>Ciphertext (Base64)</label>
+          <textarea id="dec-input" placeholder="Paste your Base64 encoded ciphertext here...&#10;&#10;Or load from a .txt file using the file picker on the left."></textarea>
+        </div>
+
+        <button class="btn-primary" id="dec-btn" onclick="handleDecrypt(this)">
+          Decrypt Message
+        </button>
+      </div>
+
+      <!-- Output card -->
+      <div class="card card-full">
+        <div class="card-title">Decrypted Output</div>
+        <div class="output-toolbar">
+          <span class="output-label">Plaintext</span>
+          <div class="output-actions">
+            <button class="btn-secondary" onclick="copyOutput('dec')">Copy</button>
+            <button class="btn-secondary" onclick="clearDec()">Clear</button>
+          </div>
+        </div>
+        <div class="output-area" id="dec-output" style="color: var(--green);">
+          <span class="output-placeholder">Decrypted plaintext will appear here...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABOUT PANEL -->
+  <div class="panel" id="panel-about">
+    <div class="grid">
+      <div class="card card-full">
+        <div class="card-title">What is AES?</div>
+        <div class="explanation-grid">
+          <div class="exp-card">
+            <h3>AES Overview</h3>
+            <p>AES (Advanced Encryption Standard) is a symmetric block cipher standardized by NIST in 2001. It replaced DES and is the most widely used encryption algorithm in the world.</p>
+            <p style="margin-top: 8px;">It operates on fixed <strong style="color:var(--accent2)">128-bit blocks</strong> and uses the same key for both encryption and decryption (symmetric).</p>
+            <div style="margin-top: 10px;">
+              <span class="tag">Symmetric</span>
+              <span class="tag">Block Cipher</span>
+              <span class="tag">128-bit Block</span>
+            </div>
+          </div>
+
+          <div class="exp-card">
+            <h3>Key Lengths & Rounds</h3>
+            <p style="margin-bottom: 10px;">The number of transformation rounds increases with key size, making longer keys exponentially harder to brute-force:</p>
+            <div class="rounds-grid">
+              <div class="round-box r128">
+                <div class="round-num">10</div>
+                <div class="round-label">AES-128</div>
+                <div class="round-label" style="color: var(--accent); margin-top: 2px;">128-bit key</div>
+              </div>
+              <div class="round-box r192">
+                <div class="round-num">12</div>
+                <div class="round-label">AES-192</div>
+                <div class="round-label" style="color: var(--green); margin-top: 2px;">192-bit key</div>
+              </div>
+              <div class="round-box r256">
+                <div class="round-num">14</div>
+                <div class="round-label">AES-256</div>
+                <div class="round-label" style="color: var(--amber); margin-top: 2px;">256-bit key</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="exp-card">
+            <h3>Key Derivation</h3>
+            <p>User passwords are variable length — AES requires exact key sizes. This app uses <strong style="color:var(--accent2)">SHA hashing</strong> to derive fixed-size keys:</p>
+            <div style="margin-top: 10px; font-size: 11px; font-family: var(--mono); color: var(--text2); line-height: 2;">
+              <div>→ AES-128: SHA-1 → truncate to 16 bytes</div>
+              <div>→ AES-192: SHA-256 → truncate to 24 bytes</div>
+              <div>→ AES-256: SHA-256 → full 32 bytes</div>
+            </div>
+            <p style="margin-top: 8px; font-size: 12px; color: var(--text3);">CryptoJS handles this automatically via its key-derivation pipeline.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-full">
+        <div class="card-title">Modes of Operation</div>
+        <div class="explanation-grid">
+          <div class="exp-card">
+            <h3>ECB — Electronic Codebook</h3>
+            <p>The simplest mode. Each 128-bit block is encrypted <strong style="color:var(--accent2)">independently</strong> using the same key.</p>
+            <p style="margin-top: 8px; color: var(--red); font-size: 12px;">⚠️ Weakness: Identical plaintext blocks produce identical ciphertext blocks. Patterns can be visible. NOT recommended for sensitive data.</p>
+            <div style="margin-top: 8px;">
+              <span class="tag">No IV needed</span>
+              <span class="tag" style="border-color: rgba(240,90,90,0.3); color: var(--red); background: rgba(240,90,90,0.08);">Least secure</span>
+            </div>
+          </div>
+
+          <div class="exp-card">
+            <h3>CBC — Cipher Block Chaining</h3>
+            <p>Each plaintext block is <strong style="color:var(--accent2)">XOR'd with the previous ciphertext block</strong> before encryption. The first block uses an IV.</p>
+            <p style="margin-top: 8px; color: var(--green); font-size: 12px;">✅ Much stronger than ECB. Identical plaintext produces different ciphertext. Most commonly used mode.</p>
+            <div style="margin-top: 8px;">
+              <span class="tag">Requires IV</span>
+              <span class="tag" style="border-color: rgba(61,214,140,0.3); color: var(--green); background: rgba(61,214,140,0.08);">Recommended</span>
+            </div>
+          </div>
+
+          <div class="exp-card">
+            <h3>CFB — Cipher Feedback</h3>
+            <p>Turns AES into a <strong style="color:var(--accent2)">stream cipher</strong>. Encrypts the IV, then XORs the result with plaintext. The ciphertext feeds back as the next input.</p>
+            <p style="margin-top: 8px; color: var(--green); font-size: 12px;">✅ Good for streaming data. Doesn't require padding. Can handle variable-length data.</p>
+            <div style="margin-top: 8px;">
+              <span class="tag">Requires IV</span>
+              <span class="tag" style="border-color: rgba(61,214,140,0.3); color: var(--green); background: rgba(61,214,140,0.08);">Stream-like</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast">
+  <div class="toast-icon" id="toast-icon">✓</div>
+  <span id="toast-msg">Success!</span>
+</div>
+
+<script>
+let currentMode = 'CBC';
+let currentKeyLen = '256';
+let currentDMode = 'CBC';
+let currentDKeyLen = '256';
+
+const modeInfo = {
+  ECB: '<span>ECB</span> — Electronic Codebook. Each block encrypted independently. <span style="color:var(--red)">No IV. Not recommended for sensitive data.</span>',
+  CBC: '<span>CBC</span> — Cipher Block Chaining. Each block XOR\'d with previous ciphertext. Requires IV. Most recommended.',
+  CFB: '<span>CFB</span> — Cipher Feedback. Turns AES into a stream cipher. Requires IV. Good for variable-length data.'
+};
+
+const keyLenInfo = {
+  '128': '<span>AES-128</span> — 16-byte key, 10 rounds. Fast and still considered secure. Key hashed with SHA-1 → 16 bytes.',
+  '192': '<span>AES-192</span> — 24-byte key, 12 rounds. Excellent security-performance balance. Key hashed with SHA-256 → 24 bytes.',
+  '256': '<span>AES-256</span> — 32-byte key, 14 rounds. Military-grade security. Key will be SHA-256 hashed to 32 bytes.'
+};
+
+function selectMode(val, el) {
+  document.querySelectorAll('#mode-group .radio-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  currentMode = val;
+  document.getElementById('mode-info').innerHTML = modeInfo[val];
+  document.getElementById('stat-mode').textContent = val;
+  document.getElementById('stat-iv').textContent = (val === 'ECB') ? 'No' : 'Yes';
+  document.getElementById('iv-display').style.display = (val === 'ECB') ? 'none' : 'block';
+  updateStats();
+}
+
+function selectKeyLen(val, el) {
+  document.querySelectorAll('#keylen-group .radio-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  currentKeyLen = val;
+  document.getElementById('keylen-info').innerHTML = keyLenInfo[val];
+  document.getElementById('stat-keylen').textContent = val + '-bit';
+  updateStats();
+}
+
+function selectDMode(val, el) {
+  document.querySelectorAll('#dmode-group .radio-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  currentDMode = val;
+}
+
+function selectDKeyLen(val, el) {
+  document.querySelectorAll('#dkeylen-group .radio-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  currentDKeyLen = val;
+}
+
+function updateStats() {
+  document.getElementById('stat-op').textContent = 'Encrypt';
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const idx = ['encrypt','decrypt','about'].indexOf(tab);
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+  document.getElementById('stat-op').textContent = tab === 'decrypt' ? 'Decrypt' : 'Encrypt';
+}
+
+function deriveKey(password, bits) {
+  const wordCount = parseInt(bits) / 32;
+  const hash = CryptoJS.SHA256(password);
+  const words = hash.words.slice(0, wordCount);
+  return CryptoJS.lib.WordArray.create(words, parseInt(bits) / 8);
+}
+
+function getCryptoMode(mode) {
+  return { ECB: CryptoJS.mode.ECB, CBC: CryptoJS.mode.CBC, CFB: CryptoJS.mode.CFB }[mode];
+}
+
+function handleEncrypt(btn) {
+  const plaintext = document.getElementById('enc-input').value.trim();
+  const password = document.getElementById('enc-key').value;
+  const out = document.getElementById('enc-output');
+
+  if (!plaintext) { showToast('Please enter a message to encrypt.', 'error'); return; }
+  if (!password) { showToast('Please enter a secret key.', 'error'); return; }
+
+  btn.classList.add('processing');
+  btn.textContent = 'Encrypting...';
+
+  setTimeout(() => {
+    try {
+      const key = deriveKey(password, currentKeyLen);
+      const cfg = { mode: getCryptoMode(currentMode), padding: CryptoJS.pad.Pkcs7 };
+
+      let encrypted;
+      if (currentMode === 'ECB') {
+        encrypted = CryptoJS.AES.encrypt(plaintext, key, cfg);
+        out.textContent = encrypted.toString();
+      } else {
+        const iv = CryptoJS.lib.WordArray.random(16);
+        cfg.iv = iv;
+        encrypted = CryptoJS.AES.encrypt(plaintext, key, cfg);
+        const combined = iv.toString(CryptoJS.enc.Base64) + ':' + encrypted.toString();
+        out.textContent = combined;
+      }
+
+      showToast('Encrypted successfully!', 'success');
+    } catch (e) {
+      out.innerHTML = '<span style="color:var(--red)">Error: ' + e.message + '</span>';
+      showToast('Encryption failed.', 'error');
+    }
+
+    btn.classList.remove('processing');
+    btn.textContent = 'Encrypt Message';
+  }, 300);
+}
+
+function handleDecrypt(btn) {
+  const ciphertext = document.getElementById('dec-input').value.trim();
+  const password = document.getElementById('dec-key').value;
+  const out = document.getElementById('dec-output');
+
+  if (!ciphertext) { showToast('Please enter ciphertext to decrypt.', 'error'); return; }
+  if (!password) { showToast('Please enter the secret key.', 'error'); return; }
+
+  btn.classList.add('processing');
+  btn.textContent = 'Decrypting...';
+
+  setTimeout(() => {
+    try {
+      const key = deriveKey(password, currentDKeyLen);
+      const cfg = { mode: getCryptoMode(currentDMode), padding: CryptoJS.pad.Pkcs7 };
+
+      let decrypted;
+      if (currentDMode === 'ECB') {
+        decrypted = CryptoJS.AES.decrypt(ciphertext, key, cfg);
+      } else {
+        const parts = ciphertext.split(':');
+        if (parts.length < 2) throw new Error('Invalid format. Expected IV:ciphertext for CBC/CFB modes.');
+        const iv = CryptoJS.enc.Base64.parse(parts[0]);
+        const ct = parts.slice(1).join(':');
+        cfg.iv = iv;
+        decrypted = CryptoJS.AES.decrypt(ct, key, cfg);
+      }
+
+      const result = decrypted.toString(CryptoJS.enc.Utf8);
+      if (!result) throw new Error('Decryption failed — wrong key, mode, or key length?');
+
+      out.textContent = result;
+      showToast('Decrypted successfully!', 'success');
+    } catch (e) {
+      out.innerHTML = '<span style="color:var(--red)">Error: ' + e.message + '</span>';
+      showToast('Decryption failed.', 'error');
+    }
+
+    btn.classList.remove('processing');
+    btn.textContent = 'Decrypt Message';
+  }, 300);
+}
+
+function saveTxtFile() {
+  const ct = document.getElementById('enc-output').textContent;
+  if (!ct || ct.includes('will appear here')) { showToast('Nothing to save.', 'error'); return; }
+
+  const meta = [
+    '# AES Cipher Lab - Encrypted Output',
+    '# Mode: ' + currentMode,
+    '# Key Length: AES-' + currentKeyLen,
+    '# Generated: ' + new Date().toISOString(),
+    '# Note: For CBC/CFB modes, format is IV:Ciphertext (Base64)',
+    '',
+    ct
+  ].join('\n');
+
+  const blob = new Blob([meta], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'encrypted_' + Date.now() + '.txt';
+  a.click();
+  showToast('Saved to .txt file!', 'success');
+}
+
+function loadFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  document.getElementById('file-name-display').textContent = file.name;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    let content = e.target.result;
+    const lines = content.split('\n').filter(l => !l.startsWith('#') && l.trim());
+    const ciphertext = lines.join('\n').trim();
+    document.getElementById('dec-input').value = ciphertext;
+    showToast('File loaded: ' + file.name, 'success');
+  };
+  reader.readAsText(file);
+}
+
+function copyOutput(type) {
+  const el = document.getElementById(type + '-output');
+  const text = el.textContent;
+  if (!text || text.includes('will appear')) { showToast('Nothing to copy.', 'error'); return; }
+  navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard!', 'success'));
+}
+
+function clearEnc() {
+  document.getElementById('enc-input').value = '';
+  document.getElementById('enc-output').innerHTML = '<span class="output-placeholder">Encrypted ciphertext will appear here...</span>';
+  document.getElementById('enc-key').value = '';
+  updateKeyStrength();
+}
+
+function clearDec() {
+  document.getElementById('dec-input').value = '';
+  document.getElementById('dec-output').innerHTML = '<span class="output-placeholder">Decrypted plaintext will appear here...</span>';
+  document.getElementById('dec-key').value = '';
+  document.getElementById('file-name-display').textContent = '';
+}
+
+function updateKeyStrength() {
+  const key = document.getElementById('enc-key').value;
+  const len = key.length;
+  const bars = [document.getElementById('sb1'), document.getElementById('sb2'),
+    document.getElementById('sb3'), document.getElementById('sb4'), document.getElementById('sb5')];
+  const colors = ['#f05a5a', '#f5a623', '#f5d623', '#3dd68c', '#3dd68c'];
+  let strength = 0;
+  if (len > 4) strength = 1;
+  if (len > 8) strength = 2;
+  if (len > 12 && /[A-Z]/.test(key)) strength = 3;
+  if (len > 16 && /[0-9]/.test(key)) strength = 4;
+  if (len > 20 && /[^A-Za-z0-9]/.test(key)) strength = 5;
+  bars.forEach((b, i) => {
+    b.style.background = i < strength ? colors[strength - 1] : 'var(--border)';
+  });
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  const icon = document.getElementById('toast-icon');
+  const msgEl = document.getElementById('toast-msg');
+  t.className = 'toast ' + type;
+  icon.textContent = type === 'success' ? '✓' : '✕';
+  msgEl.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
